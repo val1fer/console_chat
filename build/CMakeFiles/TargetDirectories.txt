@@ -1,0 +1,4 @@
+C:/Users/бебрик/Desktop/chat/build/CMakeFiles/client.dir
+C:/Users/бебрик/Desktop/chat/build/CMakeFiles/server.dir
+C:/Users/бебрик/Desktop/chat/build/CMakeFiles/ALL_BUILD.dir
+C:/Users/бебрик/Desktop/chat/build/CMakeFiles/ZERO_CHECK.dir

@@ -39,7 +39,7 @@ public:
         _socket.emplace(_context);
         _acceptor.async_accept(*_socket, [&](boost::system::error_code error) {
             auto client = std::make_shared<Connection>(std::move(*_socket), _userList, _id
-        ,  [this](std::shared_ptr<Connection> readyConn) {
+            ,  [this](std::shared_ptr<Connection> readyConn) {
                             onConnectionReady(readyConn);
                         });
             client->post(Message(SERVER_ID, "You've been connected\nPlease, write your nickname\n"));

@@ -83,7 +83,6 @@ public:
         std::cout << "[Client] disconnect\n";
         boost::asio::post([this]() { _socket.close(); });
     }
-    
 };
 
 int main() {

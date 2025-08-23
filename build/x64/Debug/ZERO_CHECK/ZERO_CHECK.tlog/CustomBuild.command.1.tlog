@@ -1,6 +1,6 @@
-^C:\USERS\БЕБРИК\DESKTOP\CHAT\BUILD\CMAKEFILES\CF01F28E424B35FB76E4A323FF34EC1D\GENERATE.STAMP.RULE
+^C:\USERS\БЕБРИК\DESKTOP\CONSOLE_CHAT\BUILD\CMAKEFILES\C8F974910C88DA907C0F80095E3E7B22\GENERATE.STAMP.RULE
 setlocal
-"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/бебрик/Desktop/chat -BC:/Users/бебрик/Desktop/chat/build --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file C:/Users/бебрик/Desktop/chat/build/ConcoleChat.sln
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/бебрик/Desktop/console_chat -BC:/Users/бебрик/Desktop/console_chat/build --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file C:/Users/бебрик/Desktop/console_chat/build/ConcoleChat.sln
 if %errorlevel% neq 0 goto :cmEnd
 :cmEnd
 endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone

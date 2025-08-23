@@ -37,30 +37,32 @@ public:
 
     void async_accept() {
         _socket.emplace(_context);
-
         _acceptor.async_accept(*_socket, [&](boost::system::error_code error) {
-            auto client = std::make_shared<Connection>(std::move(*_socket), _userList, _id);
-            Message msg(SERVER_ID, "You've been connected\n");
-            client->post(msg);
+            auto client = std::make_shared<Connection>(std::move(*_socket), _userList, _id
+        ,  [this](std::shared_ptr<Connection> readyConn) {
+                            onConnectionReady(readyConn);
+                        });
+            client->post(Message(SERVER_ID, "You've been connected\nPlease, write your nickname\n"));
+             _connections.push(client);
             _userList.addUser(_id++);
-            std::stringstream ss;
-            ss << _id << " connected!\n";
-            post(Message(SERVER_ID, ss.str()));
-            _connections.push(client);
-
-            client->start(
-                std::bind(&Server::post, this, std::placeholders::_1),
-                [&, weak = std::weak_ptr(client)] (size_t id) {
-                    if (auto shared = weak.lock();
-                        shared && _connections.erase(shared)) {
-                        std::stringstream ss;
-                        ss << id << " disconnected\n";
-                        post(Message(SERVER_ID, ss.str()));
-                    }
-                });
             async_accept();
         });
     }
+
+    void onConnectionReady(std::shared_ptr<Connection> conn) {
+        Message msg(SERVER_ID, "Welcome to chat, " + conn->getUsername() + "\n");
+        conn->post(msg);
+        conn->start(
+            std::bind(&Server::post, this, std::placeholders::_1), //func to call server->post(msg) w/o server ref
+            [this, weak = std::weak_ptr(conn)] (size_t id) { // error handler
+                if (auto left_conn = weak.lock()
+                ; left_conn && _connections.erase(left_conn)) {
+                    std::stringstream ss;
+                    ss << left_conn->getUsername() << " disconnected\n";
+                    post(Message(SERVER_ID, ss.str()));
+                }
+            });
+        }
 };
 
 int main(int argc, char* argv[]) {

@@ -33,7 +33,7 @@ public:
         return &(*_data.get());
     }
 
-    bool empty() {
+    bool empty() const {
         return _data->empty();
     }
 

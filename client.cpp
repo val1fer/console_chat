@@ -31,8 +31,7 @@ public:
             , endpoints
             , [this](error_code ec, asio::ip::tcp::endpoint) {
             if (!ec) {
-                getMessages();
-                writeMessages();
+                asio::post(_context, [this](){ getMessages(); });
                 asio::post(_context, [this](){ writeMessages(); });
             } else {
                 std::cout << ec.message();

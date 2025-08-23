@@ -40,11 +40,13 @@ public:
     }
 
     void push(const T& item) {
+        std::cout << "push\n";
         std::scoped_lock lock(mutex_);
         _deq.emplace_back(std::move(item));
     }
 
     void pop() {
+        std::cout << "pop\n";
         std::scoped_lock lock(mutex_);
         _deq.pop_front();
     }

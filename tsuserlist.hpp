@@ -11,58 +11,58 @@ namespace asio = boost::asio;
 
 class TSUserList : public std::enable_shared_from_this<TSUserList> {
 private:
-    std::unordered_map<size_t, std::shared_ptr<TSQueue<Message>>> _database;
-    mutable std::mutex _mutex;
+    std::unordered_map<size_t, std::shared_ptr<TSQueue<Message>>> database_;
+    mutable std::mutex mutex_;
 public:
     TSUserList() = default;
     TSUserList(TSUserList&) = delete;
 
    void addUser(size_t id) {
-        std::scoped_lock lock(_mutex);
-        _database[id] = std::make_shared<TSQueue<Message>>();
+        std::scoped_lock lock(mutex_);
+        database_[id] = std::make_shared<TSQueue<Message>>();
         std::cout << "[Users] " << id << " was inserted\n";
     }
 
     auto& getDatabase() {
-        return _database;
+        return database_;
     }
 
     void printList() {
         std::cout << "Database online:\n";
-        for (auto& user: _database) {
+        for (auto& user: database_) {
             std::cout << user.first << ' ';
         }
     }
     
     bool removeUser(size_t id) {
-        std::scoped_lock lock(_mutex);
-        auto it = _database.find(id);
-        if (it != _database.end()) it->second.reset();
+        std::scoped_lock lock(mutex_);
+        auto it = database_.find(id);
+        if (it != database_.end()) it->second.reset();
         else {
             std::cout << "Couldn't find " << id << " to erase\n";
             printList();
             return false;
         }
         std::cout << "[Users] " << id << " was erased\n";
-        return _database.erase(id) > 0;
+        return database_.erase(id) > 0;
     }
     
     std::shared_ptr<TSQueue<Message>> getUserQueue(size_t id) const {
-        std::scoped_lock lock(_mutex);
-        auto it = _database.find(id);
-        return (it != _database.end()) ? it->second : nullptr;
+        std::scoped_lock lock(mutex_);
+        auto it = database_.find(id);
+        return (it != database_.end()) ? it->second : nullptr;
     }
     
     bool contains(size_t id) const {
-        std::scoped_lock lock(_mutex);
-        return _database.find(id) != _database.end();
+        std::scoped_lock lock(mutex_);
+        return database_.find(id) != database_.end();
     }
 
     size_t size() const {
-        std::scoped_lock lock(_mutex);
-        return _database.size();
+        std::scoped_lock lock(mutex_);
+        return database_.size();
     }
 
-    auto begin() const {return _database.begin(); }
-    auto end() const {return _database.end(); }
+    auto begin() const {return database_.begin(); }
+    auto end() const {return database_.end(); }
 };

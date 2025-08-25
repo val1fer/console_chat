@@ -9,8 +9,8 @@
 template <typename T>
 class TSQueue : public std::enable_shared_from_this<TSQueue<T>> {
 protected:
-    std::mutex mutex_;
-    std::deque<T> _deq;
+    mutable std::mutex mutex_;
+    std::deque<T> deq_;
 public:
     TSQueue() = default;
 
@@ -22,72 +22,76 @@ public:
         swap(other);
     }
 
-    TSQueue operator= (TSQueue<T>&& other) {
+    TSQueue& operator= (TSQueue<T>&& other) {
         std::scoped_lock lock(mutex_);
         swap(other);
+        return *this;
     };
 
     ~TSQueue() { clear(); }
 
-    const T& front() {
+    const T front() const {
         std::scoped_lock lock(mutex_);
-        return _deq.front();
+        return deq_.front();
     }
 
-    const T& back() {
+    const T back() const {
         std::scoped_lock lock(mutex_);
-        return _deq.back();
+        return deq_.back();
     }
 
-    void push(const T& item) {
+    void push(T item) {
         std::cout << "push\n";
         std::scoped_lock lock(mutex_);
-        _deq.emplace_back(std::move(item));
+        deq_.push_back(std::move(item));
     }
 
     void pop() {
         std::cout << "pop\n";
         std::scoped_lock lock(mutex_);
-        _deq.pop_front();
+        deq_.pop_front();
     }
 
     bool erase(const T& item) {
         std::scoped_lock lock(mutex_);
-        auto iter = std::find(_deq.begin(), _deq.end(), item);
-        if (iter == _deq.end()) return false;
-        _deq.erase(iter);
+        auto iter = std::find(deq_.begin(), deq_.end(), item);
+        if (iter == deq_.end()) return false;
+        deq_.erase(iter);
         return true;
     }
 
-    bool empty() {
+    [[nodiscard]] bool empty() {
         std::scoped_lock lock(mutex_);
-        return _deq.empty();
+        return deq_.empty();
     }
 
     size_t size() {
         std::scoped_lock lock(mutex_);
-        return _deq.size();
+        return deq_.size();
     }
 
     void clear() {
         std::scoped_lock lock(mutex_);
-        return _deq.clear();
+        deq_.clear();
     }
 
-    void print() {
+    void print() const {
         std::scoped_lock lock(mutex_);
-        while (!_deq.empty()) {
-            std::cout << "[From Queue] \n"<< _deq.front() << '\n';
-            _deq.pop_front();
+        for (const auto& item : deq_) {
+            std::cout << item << '\n';
         }
     }
 
-    void swap(const TSQueue<T>& other) {
-        std::scoped_lock lock(mutex_);
-        std::swap(_deq, other._deq);
+    void swap(TSQueue& other) noexcept {
+         std::scoped_lock lock(mutex_, other.mutex_);
+        std::swap(deq_, other.deq_);
     }
 
-    auto begin() { return _deq.begin(); }
-    auto end() { return _deq.end(); }
-
+    template<typename F>
+    void forEach(F&& func) const {
+        std::scoped_lock lock(mutex_);
+        for (const auto& item : deq_) {
+            func(item);
+        }
+    }
 };

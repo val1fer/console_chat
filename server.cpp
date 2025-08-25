@@ -3,6 +3,8 @@
 #include <iostream>
 #include <string>
 #include <optional>
+#include <memory>
+#include <atomic>
 
 #include "tsqueue.hpp"
 #include "tsuserlist.hpp"
@@ -13,10 +15,10 @@ namespace asio = boost::asio;
 
 class Server {
 private:
-    asio::io_context& _context;
-    asio::ip::tcp::acceptor _acceptor;
-    std::optional<asio::ip::tcp::socket> _socket;
-    TSQueue<std::shared_ptr<Connection>> _connections;
+    asio::io_context& context_;
+    asio::ip::tcp::acceptor acceptor_;
+    std::optional<asio::ip::tcp::socket> socket_;
+    TSQueue<std::shared_ptr<Connection>> connections_;
 
     TSUserList _userList;
     std::atomic<size_t> _id = 10000;
@@ -24,26 +26,26 @@ private:
 
 public:
     Server(asio::io_context& context, std::uint16_t port) :
-        _context(context),
-        _acceptor(context, asio::ip::tcp::endpoint(asio::ip::tcp::v4(), port)) {
+        context_(context),
+        acceptor_(context, asio::ip::tcp::endpoint(asio::ip::tcp::v4(), port)) {
             std::cout << "[Server] Started\n";
         }
 
     void post(const Message& message) {
-        for (auto& client : _connections) {
+        connections_.forEach([&message](auto& client) {
             client->post(message);
-        }
+        });
     }
 
     void async_accept() {
-        _socket.emplace(_context);
-        _acceptor.async_accept(*_socket, [&](boost::system::error_code error) {
-            auto client = std::make_shared<Connection>(std::move(*_socket), _userList, _id
+        socket_.emplace(context_);
+        acceptor_.async_accept(*socket_, [&](boost::system::error_code error) {
+            auto client = std::make_shared<Connection>(std::move(*socket_), _userList, _id
             ,  [this](std::shared_ptr<Connection> readyConn) {
                             onConnectionReady(readyConn);
                         });
             client->post(Message(SERVER_ID, "You've been connected\nPlease, write your nickname\n"));
-             _connections.push(client);
+             connections_.push(client);
             _userList.addUser(_id++);
             async_accept();
         });
@@ -56,7 +58,7 @@ public:
             std::bind(&Server::post, this, std::placeholders::_1), //func to call server->post(msg) w/o server ref
             [this, weak = std::weak_ptr(conn)] (size_t id) { // error handler
                 if (auto left_conn = weak.lock()
-                ; left_conn && _connections.erase(left_conn)) {
+                ; left_conn && connections_.erase(left_conn)) {
                     std::stringstream ss;
                     ss << left_conn->getUsername() << " disconnected\n";
                     post(Message(SERVER_ID, ss.str()));
@@ -66,9 +68,26 @@ public:
 };
 
 int main(int argc, char* argv[]) {
-    asio::io_context io_context;
-    Server srv(io_context, 60000);
-    srv.async_accept();
-    io_context.run();
+    if (argc > 2) {
+        std::cerr << "Usage: ./server.exe or ./server.exe 5454, where 5454 - any valid port (0-65535)\n";
+        return 1;
+    }
+    asio::io_context context;
+    std::optional<Server> srv;
+    if (argc == 2) { //custom port
+        try {
+            int port = std::stoi(argv[1]);
+            if (port > UINT16_MAX) std::cerr << "Your port is actually " << port%65535 << "range of valid ports: 0-65535\n";
+            srv.emplace(context, port);
+        } catch (std::exception& ex) {
+            std::ignore = ex;
+            std::cerr << "Write a valid port\n";
+            return 1;
+        }
+    } else {
+        srv.emplace(context, 60000); //default port
+    }
+    srv->async_accept();
+    context.run();
     return 0;
 }

@@ -1,8 +1,7 @@
 #pragma once
 
-#include <boost/asio.hpp>
-#include <boost/system/error_code.hpp>
 #include <iostream>
+#include <memory>
 #include <mutex>
 #include <deque>
 
@@ -13,6 +12,7 @@ protected:
     std::deque<T> deq_;
 public:
     TSQueue() = default;
+    ~TSQueue() { clear(); }
 
     TSQueue(const TSQueue<T>&) = delete;
     TSQueue operator= (const TSQueue<T>& other) = delete;
@@ -28,8 +28,6 @@ public:
         return *this;
     };
 
-    ~TSQueue() { clear(); }
-
     const T front() const {
         std::scoped_lock lock(mutex_);
         return deq_.front();
@@ -41,13 +39,11 @@ public:
     }
 
     void push(T item) {
-        std::cout << "push\n";
         std::scoped_lock lock(mutex_);
         deq_.push_back(std::move(item));
     }
 
     void pop() {
-        std::cout << "pop\n";
         std::scoped_lock lock(mutex_);
         deq_.pop_front();
     }
@@ -83,7 +79,7 @@ public:
     }
 
     void swap(TSQueue& other) noexcept {
-         std::scoped_lock lock(mutex_, other.mutex_);
+        std::scoped_lock lock(mutex_, other.mutex_);
         std::swap(deq_, other.deq_);
     }
 

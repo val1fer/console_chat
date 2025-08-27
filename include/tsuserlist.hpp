@@ -7,8 +7,6 @@
 #include "tsqueue.hpp"
 #include "message.hpp"
 
-namespace asio = boost::asio;
-
 class TSUserList : public std::enable_shared_from_this<TSUserList> {
 private:
     std::unordered_map<size_t, std::shared_ptr<TSQueue<Message>>> database_;
@@ -23,15 +21,11 @@ public:
         std::cout << "[Users] " << id << " was inserted\n";
     }
 
-    auto& getDatabase() {
-        return database_;
-    }
-
     void printList() {
         std::cout << "Database online:\n";
-        for (auto& user: database_) {
-            std::cout << user.first << ' ';
-        }
+        forEach([](auto& user) {
+            std::cout << user.first << '\n';
+        });
     }
     
     bool removeUser(size_t id) {
@@ -63,6 +57,11 @@ public:
         return database_.size();
     }
 
-    auto begin() const {return database_.begin(); }
-    auto end() const {return database_.end(); }
+    template<typename F>
+    void forEach(F&& func) const {
+        std::scoped_lock lock(mutex_);
+        for (const auto& item : database_) {
+            func(item);
+        }
+    }
 };
